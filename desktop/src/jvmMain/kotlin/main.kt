@@ -66,8 +66,6 @@ fun main() {
     val exceptionHandlerFactory = WindowExceptionHandlerFactory { window ->
         WindowExceptionHandler { throwable ->
             SwingUtilities.invokeLater {
-                // if there was an error during window init, we can't use it as a parent,
-                // otherwise we will have two exceptions in the log
                 showErrorDialog(window.takeIf { it.isDisplayable }, throwable)
                 window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
 
@@ -178,7 +176,6 @@ fun main() {
                 ),
                 onPreviewKeyEvent = keyCodeHandler(),
             ) {
-                // For some reason this returns the title bar height on macOS.
                 val menuBarHeight = remember(window.height) {
                     if (Platform.isMac) window.height.dp else 0.dp
                 }
@@ -207,7 +204,6 @@ fun main() {
                 }
 
                 LaunchedEffect(density) {
-                    // Set this after getting the original height.
                     window.minimumSize = with(density) {
                         Dimension(200.dp.roundToPx(), 200.dp.roundToPx())
                     }
@@ -239,23 +235,11 @@ fun main() {
                     LocalMenuBarHeight provides menuBarHeight,
                     LocalWindowDecorations provides LocalWindowDecorations.current.copy(top = menuBarHeight),
                 ) {
-                    MainView()
+                    MainView(androidVersionOverride = "14") // Pass the override value to MainView
                 }
             }
         }
     }
     BugsnagUtils.destroy()
     exitProcess(0)
-}
-
-private fun showErrorDialog(parentComponent: Window?, throwable: Throwable) {
-    val title = "Error"
-    val message = throwable.message ?: "Unknown error"
-    val pane = object : JOptionPane(message, ERROR_MESSAGE) {
-        // Limit width for long messages
-        override fun getMaxCharactersPerLineCount(): Int = 120
-    }
-    val dialog = pane.createDialog(parentComponent, title)
-    dialog.isVisible = true
-    dialog.dispose()
 }
